@@ -95,6 +95,52 @@
   }
   .add-btn:active { transform: scale(0.98); opacity: 0.9; }
 
+  .util-row {
+    display: flex;
+    gap: 10px;
+    margin: 0 0 22px;
+  }
+  .util-row.spaced { margin-top: 20px; }
+  .util-btn {
+    flex: 1;
+    padding: 11px 10px;
+    background: transparent;
+    color: var(--ink-soft);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    font-family: 'Karla', sans-serif;
+    font-weight: 700;
+    font-size: 12.5px;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
+  }
+  .util-btn:active {
+    transform: scale(0.98);
+    background: var(--accent-soft);
+    color: var(--ink);
+  }
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(22px + env(safe-area-inset-bottom));
+    transform: translate(-50%, 12px);
+    max-width: calc(100% - 40px);
+    padding: 11px 18px;
+    background: var(--ink);
+    color: var(--card);
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 60;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
   .empty {
     text-align: center;
     padding: 60px 20px;
@@ -337,6 +383,15 @@
   }
   .btn-primary { background: var(--accent); color: #fff8f0; }
   .btn-secondary { background: var(--tab-bg); color: var(--ink); }
+  .modal-actions.stack { flex-direction: column; gap: 8px; }
+  .modal-actions.stack button { flex: none; width: 100%; }
+  .modal-note {
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    margin: 0 0 16px;
+  }
+  .modal-note strong { color: var(--ink); }
 
   ::selection { background: var(--accent-soft); }
 
@@ -437,6 +492,12 @@
 
   <div class="view active" id="view-recipes">
     <button class="add-btn" onclick="openAddModal()">+ Add a recipe</button>
+    <div class="util-row">
+      <button class="util-btn" onclick="exportRecipes()">Export backup</button>
+      <button class="util-btn" onclick="openImportPicker()">Import backup</button>
+    </div>
+    <input type="file" id="importFile" accept="application/json,.json"
+           style="display:none" onchange="handleImportFile(this)">
     <div id="recipeList"></div>
   </div>
 
@@ -445,6 +506,9 @@
     <div id="pickList"></div>
     <div class="section-label" style="margin-top:24px;">Combined list</div>
     <div id="shoppingList"></div>
+    <div class="util-row spaced">
+      <button class="util-btn" onclick="exportShoppingList()">Export list</button>
+    </div>
   </div>
 </div>
 
@@ -479,6 +543,20 @@
     </div>
   </div>
 </div>
+
+<div class="modal-overlay" id="importModal">
+  <div class="modal">
+    <h2>Import recipes</h2>
+    <p class="modal-note" id="importSummary"></p>
+    <div class="modal-actions stack">
+      <button class="btn-primary" onclick="applyImport('merge')">Merge — keep what I have</button>
+      <button class="btn-secondary" onclick="applyImport('replace')">Replace everything</button>
+      <button class="btn-secondary" onclick="closeImportModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
 
 <script>
 // Standalone storage shim — uses localStorage so this file works offline,
@@ -1514,6 +1592,234 @@ async function saveNewRecipe() {
   closeAddModal();
   render();
   renderShopping();
+}
+
+// ---------------------------------------------------------------------------
+// Export / import
+//
+// Two different jobs, deliberately kept apart:
+//   - the shopping list exports as plain text, to hand to a person
+//   - recipes export as JSON, to hand back to this app on another device
+// ---------------------------------------------------------------------------
+
+const BACKUP_VERSION = 1;
+
+let toastTimer = null;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+function stamp() {
+  const d = new Date();
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+function downloadFile(filename, text, mime) {
+  const url = URL.createObjectURL(new Blob([text], { type: mime }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// --- Recipes → JSON backup ---
+
+function exportRecipes() {
+  if (recipes.length === 0) { toast('No recipes to export yet'); return; }
+  const payload = {
+    app: 'recipe-box',
+    version: BACKUP_VERSION,
+    exported: new Date().toISOString(),
+    recipes: recipes.map(({ _open, ...rest }) => rest)   // _open is never persisted
+  };
+  downloadFile(`recipe-box-backup-${stamp()}.json`, JSON.stringify(payload, null, 2), 'application/json');
+  toast(`Exported ${recipes.length} recipe${recipes.length === 1 ? '' : 's'}`);
+}
+
+// --- Shopping list → plain text ---
+
+function buildShoppingText() {
+  const included = recipes.filter(r => selectedForShopping.has(r.id));
+  if (included.length === 0) return null;
+
+  const items = buildMergedItems(included);
+  const byLabel = (a, b) => a.label.localeCompare(b.label);
+  const lines = [
+    'SHOPPING LIST',
+    `${new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })} · ${included.length} recipe${included.length === 1 ? '' : 's'}`,
+    ''
+  ];
+
+  // same grouping and ordering the on-screen list uses
+  CATEGORY_ORDER.forEach(cat => {
+    const group = items.filter(i => !i.checked && i.category === cat).sort(byLabel);
+    if (group.length === 0) return;
+    lines.push(cat.toUpperCase());
+    group.forEach(i => lines.push(`- ${i.label}`));
+    lines.push('');
+  });
+
+  const done = items.filter(i => i.checked).sort(byLabel);
+  if (done.length > 0) {
+    lines.push('ALREADY GOT');
+    done.forEach(i => lines.push(`- ${i.label}`));
+    lines.push('');
+  }
+
+  lines.push(`From: ${included.map(r => r.title).join(', ')}`);
+  return lines.join('\n');
+}
+
+async function exportShoppingList() {
+  const text = buildShoppingText();
+  if (!text) { toast('Tick some recipes first'); return; }
+
+  // On iOS this opens the native share sheet — Messages, Notes, WhatsApp.
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: 'Shopping List', text });
+      return;
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;   // user dismissed the sheet
+      // anything else: fall through to copy
+    }
+  }
+
+  try {
+    await navigator.clipboard.writeText(text);
+    toast('Shopping list copied');
+    return;
+  } catch (e) {
+    // clipboard needs a secure context; opening the file directly won't have one
+  }
+
+  downloadFile(`shopping-list-${stamp()}.txt`, text, 'text/plain');
+  toast('Shopping list downloaded');
+}
+
+// --- JSON backup → recipes ---
+
+let pendingImport = null;
+
+function openImportPicker() {
+  document.getElementById('importFile').click();
+}
+
+function isUsableRecipe(r) {
+  return r && typeof r === 'object'
+    && typeof r.title === 'string' && r.title.trim()
+    && Array.isArray(r.ingredients) && r.ingredients.length > 0;
+}
+
+function normalizeImported(r) {
+  const str = v => (typeof v === 'string' ? v.trim() : '');
+  const list = v => (Array.isArray(v) ? v.map(x => String(x).trim()).filter(Boolean) : []);
+  return {
+    id: str(r.id) || `r-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    title: r.title.trim(),
+    description: str(r.description),
+    ingredients: list(r.ingredients),
+    steps: list(r.steps),
+    notes: str(r.notes)
+  };
+}
+
+async function handleImportFile(input) {
+  const file = input.files && input.files[0];
+  input.value = '';   // so picking the same file twice still fires onchange
+  if (!file) return;
+
+  let data;
+  try {
+    data = JSON.parse(await file.text());
+  } catch (e) {
+    alert("That file isn't valid JSON. Pick a Recipe Box backup file (recipe-box-backup-….json).");
+    return;
+  }
+
+  // accept both our wrapper and a bare array of recipes
+  const incoming = Array.isArray(data) ? data : (data && data.recipes);
+  if (!Array.isArray(incoming)) {
+    alert("Couldn't find any recipes in that file.");
+    return;
+  }
+
+  const usable = incoming.filter(isUsableRecipe).map(normalizeImported);
+  if (usable.length === 0) {
+    alert('No usable recipes in that file — each one needs a title and at least one ingredient.');
+    return;
+  }
+
+  pendingImport = usable;
+  const dropped = incoming.length - usable.length;
+  document.getElementById('importSummary').innerHTML =
+    `Found <strong>${usable.length} recipe${usable.length === 1 ? '' : 's'}</strong> in that file` +
+    (dropped > 0 ? `, and skipped ${dropped} with no title or ingredients` : '') +
+    `. You currently have <strong>${recipes.length}</strong>.<br><br>` +
+    `Merge adds the ones you don't already have. Replace deletes your current ${recipes.length} and uses the file instead.`;
+  document.getElementById('importModal').classList.add('open');
+}
+
+function closeImportModal() {
+  document.getElementById('importModal').classList.remove('open');
+  pendingImport = null;
+}
+
+async function applyImport(mode) {
+  const incoming = pendingImport;
+  if (!incoming) { closeImportModal(); return; }
+
+  if (mode === 'replace' &&
+      !confirm(`Delete your current ${recipes.length} recipes and replace them with the ${incoming.length} from this file? This can't be undone.`)) {
+    return;
+  }
+
+  document.getElementById('importModal').classList.remove('open');
+  pendingImport = null;
+
+  let added = 0, skipped = 0;
+
+  if (mode === 'replace') {
+    recipes = incoming;
+    // drop selection and tick state pointing at recipes that no longer exist
+    const liveIds = new Set(recipes.map(r => r.id));
+    selectedForShopping = new Set([...selectedForShopping].filter(id => liveIds.has(id)));
+    Object.keys(shoppingChecked).forEach(id => { if (!liveIds.has(id)) delete shoppingChecked[id]; });
+    checkedIngredients = {};
+    openTabs = {};
+    added = incoming.length;
+  } else {
+    // match on id first, then title — there's no edit feature, so a repeat
+    // title is a re-import rather than a revision
+    const haveIds = new Set(recipes.map(r => r.id));
+    const haveTitles = new Set(recipes.map(r => r.title.trim().toLowerCase()));
+    incoming.forEach(r => {
+      const titleKey = r.title.toLowerCase();
+      if (haveIds.has(r.id) || haveTitles.has(titleKey)) { skipped++; return; }
+      haveIds.add(r.id);
+      haveTitles.add(titleKey);
+      recipes.unshift(r);
+      added++;
+    });
+  }
+
+  await persistRecipes();
+  await persistSelected();
+  await persistShoppingChecked();
+  render();
+  renderShopping();
+
+  toast(mode === 'replace'
+    ? `Replaced — ${added} recipe${added === 1 ? '' : 's'} loaded`
+    : `Added ${added}${skipped > 0 ? `, skipped ${skipped} you already had` : ''}`);
 }
 
 loadRecipes();

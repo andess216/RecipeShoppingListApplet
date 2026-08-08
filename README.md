@@ -8,7 +8,7 @@ recipes are stored in your browser's `localStorage`.
 
 ## What it does
 
-**My Recipes** — 21 recipes as expandable cards, each with Ingredients / Steps /
+**My Recipes** — 20 recipes as expandable cards, each with Ingredients / Steps /
 Notes sub-tabs. Add and delete your own. Steps are optional; recipes without them
 just don't show that tab.
 
@@ -20,6 +20,19 @@ section at the bottom.
 Quantity merging converts within weight (g/kg) and volume (ml/l). Anything it
 can't convert is joined with `+` rather than guessing. Ranges like "2–4 inches
 ginger" round **up**, so you never under-buy.
+
+**Export / import** — two buttons doing two different jobs:
+
+- **Export list** (Shopping List tab) turns the combined list into plain text and
+  opens the iOS share sheet, so you can send it to someone or drop it in Notes.
+  On desktop it copies to the clipboard instead.
+- **Export backup** / **Import backup** (My Recipes tab) saves every recipe to a
+  `recipe-box-backup-YYYY-MM-DD.json` file and loads one back. This is how you
+  move your recipes to another device, since nothing syncs on its own.
+
+On import you choose **Merge** (adds only recipes you don't already have, matched
+on id then title) or **Replace** (wipes what's there and uses the file). Replace
+asks for confirmation first.
 
 ## Use it on your phone
 
@@ -35,8 +48,9 @@ That means:
 
 - **Nothing is uploaded anywhere.** There's no server and no account.
 - **Data does not sync between devices.** Your phone and your laptop keep separate
-  recipe lists. Whichever copy you add to your home screen becomes the real one.
-- **Clearing your browser data deletes your recipes.** There's no export yet.
+  recipe lists. Whichever copy you add to your home screen becomes the real one —
+  use **Export / Import backup** to move recipes between them by hand.
+- **Clearing your browser data deletes your recipes.** Export a backup first.
 
 Note that the *published site* is public — anyone with the URL can open the app —
 but the recipes you add are only ever on your own device.
