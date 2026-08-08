@@ -2,3 +2,6 @@
 Thumbs.db
 desktop.ini
 .vscode/
+
+# machine-local Claude Code permissions
+.claude/settings.local.json
