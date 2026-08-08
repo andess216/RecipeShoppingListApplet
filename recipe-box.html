@@ -1,0 +1,1490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recipe Box</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Karla:wght@400;500;700&display=swap');
+
+  :root{
+    --card: #fffaf3;
+    --paper: #fbf3e7;
+    --ink: #3a2e26;
+    --ink-soft: #7a6a5c;
+    --line: #e3d3bd;
+    --accent: #b5533c;
+    --accent-soft: #f0dcc9;
+    --tab-bg: #efe1cb;
+    --check: #6d8b6b;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(58,46,38,0.06) 1px, transparent 0);
+    background-size: 18px 18px;
+    color: var(--ink);
+    font-family: 'Karla', sans-serif;
+    min-height: 100vh;
+    padding-bottom: 60px;
+  }
+
+  header {
+    padding: 28px 20px 16px;
+    text-align: center;
+  }
+
+  header .kicker {
+    font-family: 'Karla', sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  header h1 {
+    font-family: 'Fraunces', serif;
+    font-optical-sizing: auto;
+    font-weight: 700;
+    font-size: 34px;
+    margin: 4px 0 2px;
+    letter-spacing: -0.01em;
+  }
+
+  header p {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 13px;
+  }
+
+  .container {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 0 16px;
+  }
+
+  .add-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    margin: 18px 0 22px;
+    padding: 13px;
+    background: var(--ink);
+    color: var(--card);
+    border: none;
+    border-radius: 10px;
+    font-family: 'Karla', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+  }
+  .add-btn:active { transform: scale(0.98); opacity: 0.9; }
+
+  .empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--ink-soft);
+  }
+  .empty .big { font-size: 40px; margin-bottom: 10px; }
+  .empty p { font-family: 'Fraunces', serif; font-size: 18px; margin: 0 0 4px; color: var(--ink); }
+  .empty span { font-size: 13px; }
+
+  .recipe-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    margin-bottom: 14px;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(58,46,38,0.05);
+  }
+
+  .recipe-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 16px 18px;
+    cursor: pointer;
+  }
+
+  .recipe-head-text { flex: 1; min-width: 0; }
+
+  .recipe-title {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 20px;
+    margin: 0 0 3px;
+    color: var(--ink);
+  }
+
+  .recipe-meta {
+    font-size: 12px;
+    color: var(--ink-soft);
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .chevron {
+    font-size: 18px;
+    color: var(--accent);
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+  }
+  .recipe-card.open .chevron { transform: rotate(180deg); }
+
+  .recipe-body {
+    display: none;
+    padding: 0 18px 20px;
+    border-top: 1px dashed var(--line);
+  }
+  .recipe-card.open .recipe-body { display: block; }
+
+  .tabs {
+    display: flex;
+    gap: 6px;
+    margin: 16px 0 14px;
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 8px 10px;
+    background: var(--tab-bg);
+    border: none;
+    border-radius: 8px;
+    font-family: 'Karla', sans-serif;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    cursor: pointer;
+    letter-spacing: 0.01em;
+  }
+  .tab-btn.active {
+    background: var(--accent);
+    color: #fff8f0;
+  }
+
+  .pane { display: none; }
+  .pane.active { display: block; }
+
+  .desc {
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+    margin: 0 0 14px;
+    font-style: italic;
+  }
+
+  .ing-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 14px;
+  }
+  .ing-row:last-child { border-bottom: none; }
+
+  .checkbox {
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid var(--ink-soft);
+    border-radius: 5px;
+    flex-shrink: 0;
+    margin-top: 1px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--card);
+  }
+  .checkbox.checked {
+    background: var(--check);
+    border-color: var(--check);
+    color: #fff;
+    font-size: 12px;
+  }
+  .ing-text.checked {
+    text-decoration: line-through;
+    color: var(--ink-soft);
+  }
+
+  .step-row {
+    display: flex;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .step-row:last-child { border-bottom: none; }
+  .step-num {
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    color: var(--accent);
+    font-size: 15px;
+    width: 20px;
+    flex-shrink: 0;
+  }
+  .step-text { font-size: 14px; line-height: 1.5; }
+  .step-title { font-weight: 700; display: block; margin-bottom: 2px; }
+
+  .notes-box {
+    background: var(--accent-soft);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--ink);
+  }
+  .notes-box .lbl {
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .card-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 12px;
+    margin-top: 4px;
+  }
+  .del-btn {
+    background: none;
+    border: none;
+    color: var(--ink-soft);
+    font-size: 12px;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  .del-btn:hover { color: var(--accent); }
+
+  /* Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(58,46,38,0.45);
+    z-index: 50;
+    align-items: flex-end;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--card);
+    width: 100%;
+    max-height: 88vh;
+    overflow-y: auto;
+    border-radius: 18px 18px 0 0;
+    padding: 22px 20px 30px;
+  }
+  .modal h2 {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    margin: 0 0 16px;
+  }
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+    color: var(--ink-soft);
+    margin-bottom: 5px;
+  }
+  .field input, .field textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font-family: 'Karla', sans-serif;
+    font-size: 14px;
+    background: var(--paper);
+    color: var(--ink);
+  }
+  .field textarea { min-height: 90px; resize: vertical; font-family: 'Karla', monospace; line-height: 1.5; }
+  .hint { font-size: 11.5px; color: var(--ink-soft); margin-top: 4px; }
+
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 6px;
+  }
+  .btn-primary, .btn-secondary {
+    flex: 1;
+    padding: 12px;
+    border-radius: 9px;
+    font-weight: 700;
+    font-size: 14px;
+    border: none;
+    cursor: pointer;
+  }
+  .btn-primary { background: var(--accent); color: #fff8f0; }
+  .btn-secondary { background: var(--tab-bg); color: var(--ink); }
+
+  ::selection { background: var(--accent-soft); }
+
+  .nav-tabs {
+    display: flex;
+    gap: 6px;
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 0 16px;
+  }
+  .nav-tab {
+    flex: 1;
+    padding: 11px 10px;
+    background: var(--tab-bg);
+    border: none;
+    border-radius: 9px 9px 0 0;
+    font-family: 'Karla', sans-serif;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    cursor: pointer;
+  }
+  .nav-tab.active {
+    background: var(--card);
+    color: var(--ink);
+    box-shadow: 0 -1px 0 var(--line) inset;
+  }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .pick-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 4px;
+    border-bottom: 1px solid var(--line);
+  }
+  .pick-row:last-child { border-bottom: none; }
+  .pick-row .rtitle { font-family: 'Fraunces', serif; font-size: 15px; font-weight: 600; }
+  .pick-row .rcount { font-size: 12px; color: var(--ink-soft); margin-top: 1px; }
+
+  .section-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    color: var(--ink-soft);
+    margin: 20px 0 8px;
+  }
+
+  .shop-group {
+    margin-bottom: 18px;
+  }
+  .shop-group-title {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--accent);
+    margin: 0 0 6px;
+  }
+
+  .shop-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--ink-soft);
+    font-size: 13.5px;
+  }
+
+  .save-status {
+    display: none;
+    margin: 14px 0 0;
+    padding: 10px 12px;
+    background: #f7e4d8;
+    border: 1px solid #e0b89e;
+    border-radius: 9px;
+    font-size: 12.5px;
+    line-height: 1.45;
+    color: #8a4a2c;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="kicker">Andes's Kitchen</div>
+  <h1>Recipe Box</h1>
+  <p>Every recipe you've saved, in one place</p>
+</header>
+
+<div class="nav-tabs">
+  <button class="nav-tab active" id="nav-recipes" onclick="switchView('recipes')">My Recipes</button>
+  <button class="nav-tab" id="nav-shopping" onclick="switchView('shopping')">Shopping List</button>
+</div>
+
+<div class="container">
+  <div id="saveStatus" class="save-status"></div>
+
+  <div class="view active" id="view-recipes">
+    <button class="add-btn" onclick="openAddModal()">+ Add a recipe</button>
+    <div id="recipeList"></div>
+  </div>
+
+  <div class="view" id="view-shopping">
+    <div class="section-label">Include recipes</div>
+    <div id="pickList"></div>
+    <div class="section-label" style="margin-top:24px;">Combined list</div>
+    <div id="shoppingList"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h2>Add a recipe</h2>
+    <div class="field">
+      <label>Title</label>
+      <input type="text" id="f-title" placeholder="e.g. Rendang Daging">
+    </div>
+    <div class="field">
+      <label>Short description (optional)</label>
+      <input type="text" id="f-desc" placeholder="A one-line summary">
+    </div>
+    <div class="field">
+      <label>Ingredients — one per line</label>
+      <textarea id="f-ingredients" placeholder="1 kg beef, cubed&#10;2-4 inches ginger&#10;800g coconut milk"></textarea>
+      <div class="hint">One ingredient per line.</div>
+    </div>
+    <div class="field">
+      <label>Steps — one per line (optional)</label>
+      <textarea id="f-steps" placeholder="Boil the beef for 1.5-2.5 hours&#10;Blend the spice paste&#10;Fry the paste in oil"></textarea>
+      <div class="hint">One step per line, in order.</div>
+    </div>
+    <div class="field">
+      <label>Notes (optional)</label>
+      <textarea id="f-notes" placeholder="Tips, substitutions, storage advice..." style="min-height:60px;"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeAddModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveNewRecipe()">Save recipe</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'saved-recipes-v4';
+const SELECTED_KEY = 'shopping-selected-v1';
+const SHOP_CHECKED_KEY = 'shopping-checked-v1';
+let recipes = [];
+let openTabs = {}; // recipeId -> 'ingredients'|'steps'|'notes'
+let checkedIngredients = {}; // recipeId -> Set of ingredient indices
+let selectedForShopping = new Set(); // recipeIds included in combined list
+let shoppingChecked = {}; // recipeId -> Set of ingredient indices checked off in shopping view
+
+const DEFAULT_RECIPES = [
+
+  {
+    id: 'rendang-daging',
+    title: 'Rendang Daging',
+    description: 'Slow-cooked Indonesian beef curry with a fragrant spice paste and coconut milk.',
+    ingredients: [
+      '1 kg beef, cut into medium cubes',
+      '1 cane sugar stick (or 1/2 tbsp brown sugar)',
+      '400 ml coconut milk (for initial cook)',
+      '400 ml coconut milk (reserved for simmering)',
+      '1/2 tbsp tamarind paste',
+      '4 kaffir lime leaves',
+      'Salt, to taste',
+      'MSG, to taste',
+      'Maggi Cukup Rasa, to taste',
+      '3 inches ginger',
+      '3 inches turmeric',
+      '2 handfuls dried chilies',
+      '6 red birds eye chilies',
+      '5 green birds eye chilies',
+      '2 shallots',
+      '10 cloves garlic',
+      '4 lemongrass sticks',
+      '1 tbsp cumin seeds',
+      '1 tbsp coriander seeds',
+      '1 tbsp fennel seeds',
+      '1 cinnamon stick',
+      '1/2 cup oil, for frying paste',
+      '3 tbsp shredded coconut (optional)'
+    ],
+    steps: [
+      'Boil the beef, covered with water, 1.5-2.5 hours on medium-high heat. Skim fat, stir occasionally.',
+      'Blend ginger, garlic, turmeric, chilies, shallots and lemongrass into a chunky, spiky paste.',
+      'Toast cumin, coriander, fennel and cinnamon in a dry pan until fragrant, then grind fine.',
+      'Fry the blended paste in oil over medium-high heat, stirring often.',
+      'Stir in the sugar and let it pecah minyak (oil separates) - it should bubble and smell fragrant.',
+      'Stir in the toasted ground spices.',
+      'Add the boiled beef and 400 ml coconut milk. Stir well.',
+      'Simmer about an hour, gradually adding the second can of coconut milk as it reduces.',
+      'Stir in the tamarind paste.',
+      'Add kaffir lime leaves and more coconut milk if it looks dry.',
+      'Taste and season with salt, MSG and Maggi Cukup Rasa. Simmer as long as possible.'
+    ],
+    notes: 'Use a BIG pot. Blend the paste chunky, not smooth. Do not fear the oil when frying the paste. The longer the simmer, the deeper the flavour.'
+  },
+  {
+    id: 'shanghainese-pork-chops',
+    title: 'Shanghainese Braised Pork Chops',
+    description: 'Tenderized pork chops, shallow-fried then braised in a glossy soy-wine sauce with scallions.',
+    ingredients: [
+      '650 g pork chops',
+      '1 1/2 tbsp light soy sauce (for marinade)',
+      '1/2 tsp white pepper',
+      '1 egg',
+      '2 tbsp cornstarch',
+      'Oil, for shallow-frying',
+      '1 bunch scallions',
+      '4 slices ginger',
+      '3 tbsp white wine',
+      '3 tbsp light soy sauce (for braising)',
+      '1 tbsp dark soy sauce',
+      '20 g sugar',
+      '400 ml water'
+    ],
+    steps: [
+      'Make 2-3 cuts along the outer edge of each chop through the connective tissue, to stop curling.',
+      'Pound both sides in a crosshatch pattern with the back of a knife to tenderize.',
+      'Add light soy, white pepper, egg and starch. Massage in until evenly coated.',
+      'Shallow-fry the chops over medium-high heat until golden on both sides. Set aside.',
+      'Leave a little oil in the wok. Fry the ginger and whole bunch of scallions until fragrant.',
+      'Return the chops. Pour in the white wine and let it bubble off.',
+      'Add light soy, dark soy and sugar. Pour in water to almost cover the chops.',
+      'Cover and simmer 30 minutes, turning once or twice.',
+      'Uncover, raise the heat and reduce until thick and glossy. Serve with rice.'
+    ],
+    notes: 'Scoring and pounding first keeps the chops flat in the hot oil.'
+  },
+
+  {
+    id: 'pasta-red-sauce',
+    title: 'Pasta Red Sauce',
+    description: 'Weeknight tomato sauce with bacon and pork mince.',
+    ingredients: [
+      '400 g pasta',
+      '1 jar pasta sauce',
+      '300 g pork mince',
+      '4 rashers bacon, chopped',
+      '4 cloves garlic',
+      '1 onion',
+      'Olive oil',
+      'Salt and pepper'
+    ],
+    steps: [
+      'Render the bacon in a little oil until the fat runs and the edges crisp.',
+      'Add the diced onion and cook until soft, then the garlic for a minute more.',
+      'Add the pork mince, breaking it up, and brown properly.',
+      'Pour in the pasta sauce, season, and simmer while the pasta cooks.',
+      'Boil the pasta in well-salted water, then toss through the sauce with a splash of pasta water.'
+    ],
+    notes: ''
+  },
+  {
+    id: 'pasta-chili',
+    title: 'Pasta with Chili',
+    description: 'Drier, spicier pasta built on stock rather than tomato.',
+    ingredients: [
+      '400 g pasta',
+      '300 g pork mince',
+      '6 cloves garlic',
+      '2 tsp dried chili flakes',
+      '250 ml chicken stock',
+      'Olive oil',
+      'Salt and pepper'
+    ],
+    steps: [
+      'Gently fry the sliced garlic and dried chili in plenty of olive oil until fragrant, not browned.',
+      'Add the pork mince and brown well.',
+      'Pour in the chicken stock and let it reduce to a loose sauce.',
+      'Toss with the cooked pasta and a splash of pasta water to emulsify.'
+    ],
+    notes: ''
+  },
+  {
+    id: 'asam-bake',
+    title: 'Asam Bake',
+    description: 'Tamarind-based bake with fish, prawn and long beans.',
+    ingredients: [
+      '400 g fish fillets',
+      '200 g prawns',
+      '200 g long beans, cut into lengths',
+      '3 tomatoes, wedged',
+      '2 tbsp tamarind paste',
+      '2 shallots',
+      '3 cloves garlic',
+      '1 tbsp chili paste',
+      'Salt and sugar, to taste'
+    ],
+    steps: [],
+    notes: 'Method not written down yet.'
+  },
+  {
+    id: 'tom-yum-soup',
+    title: 'Tom Yum Soup',
+    description: 'Built on shop-bought tom yum paste.',
+    ingredients: [
+      '1 L chicken stock',
+      '3 tbsp tom yum paste',
+      '200 g mushrooms',
+      '1 carrot',
+      '150 g cauliflower',
+      '100 g baby corn',
+      '2 tbsp fish sauce',
+      '2 limes, juiced',
+      'Thai chilies, to taste'
+    ],
+    steps: [
+      'Bring the stock to a simmer and stir in the tom yum paste until dissolved.',
+      'Add the harder vegetables first (carrot, cauliflower, baby corn), then the mushrooms.',
+      'Finish off the heat with fish sauce and lime juice, tasting as you go.'
+    ],
+    notes: 'Add the lime juice at the end - boiling it turns it bitter. Taste before adding fish sauce, as pastes vary a lot in saltiness.'
+  },
+  {
+    id: 'chicken-curry',
+    title: 'Chicken Curry',
+    description: '',
+    ingredients: [
+      '800 g chicken, bone-in pieces',
+      '3 potatoes, quartered',
+      '400 ml coconut milk',
+      '4 shallots',
+      '4 cloves garlic',
+      '1 inch ginger',
+      '3 tbsp curry powder',
+      '2 lemongrass sticks',
+      'Curry leaves',
+      'Oil',
+      'Salt, to taste'
+    ],
+    steps: [
+      'Blend the shallots, garlic and ginger into a paste.',
+      'Fry the paste in oil with the curry leaves and lemongrass until the oil separates.',
+      'Add the curry powder and cook out for a minute.',
+      'Add the chicken and coat, then the potatoes and coconut milk.',
+      'Simmer until the chicken is tender and the potatoes are cooked through.'
+    ],
+    notes: ''
+  },
+  {
+    id: 'sausage-stir-fry',
+    title: 'Sausage Stir Fry',
+    description: '',
+    ingredients: [
+      '400 g sausages, sliced',
+      '1 onion',
+      '2 peppers',
+      '3 cloves garlic',
+      '2 tbsp light soy sauce',
+      '1 tbsp oyster sauce',
+      'Oil'
+    ],
+    steps: [
+      'Brown the sliced sausages in a hot pan and set aside.',
+      'Stir-fry the onion and peppers until they take on colour but keep some bite.',
+      'Return the sausages, add the garlic and sauces, and toss to coat.'
+    ],
+    notes: ''
+  },
+  {
+    id: 'long-beans-sambal',
+    title: 'Long Beans Sambal Fry',
+    description: '',
+    ingredients: [
+      '300 g long beans, cut into lengths',
+      '200 g prawns',
+      '1 onion',
+      '3 tbsp sambal',
+      '3 cloves garlic',
+      '1 tsp sugar',
+      'Oil',
+      'Salt, to taste'
+    ],
+    steps: [
+      'Fry the sambal in oil until the oil separates and it smells fragrant.',
+      'Add the onion and garlic, then the prawns, cooking until just pink.',
+      'Add the long beans and stir-fry until tender-crisp. Season with sugar and salt.'
+    ],
+    notes: ''
+  },
+  {
+    id: 'chicken-rendang',
+    title: 'Chicken Rendang',
+    description: 'Quicker cousin of the beef rendang - same paste, much shorter cook.',
+    ingredients: [
+      '1 kg chicken, bone-in pieces',
+      '400 ml coconut milk',
+      '4 lemongrass sticks',
+      '6 shallots',
+      '6 cloves garlic',
+      '2 inches ginger',
+      '1 inch turmeric',
+      '10 dried chilies',
+      '4 kaffir lime leaves',
+      '1 tbsp toasted shredded coconut (kerisik)',
+      '1 tbsp tamarind paste',
+      '1 tbsp sugar',
+      'Oil',
+      'Salt, to taste'
+    ],
+    steps: [
+      'Blend the shallots, garlic, ginger, turmeric, lemongrass and dried chilies into a paste.',
+      'Fry the paste in oil until the oil separates and it darkens.',
+      'Add the chicken and coat well, then pour in the coconut milk.',
+      'Add the lime leaves and tamarind, and simmer until the sauce is thick and clinging.',
+      'Stir through the kerisik near the end, and season with sugar and salt.'
+    ],
+    notes: 'Chicken needs far less time than beef - 40 minutes or so rather than hours.'
+  },
+  {
+    id: 'japanese-potato-salad',
+    title: 'Japanese Potato Salad',
+    description: '',
+    ingredients: [
+      '600 g potatoes',
+      '1 cucumber, thinly sliced',
+      '2 tomatoes',
+      '2 eggs, hard-boiled',
+      '4 tbsp Japanese mayo',
+      '1 tbsp rice vinegar',
+      'Salt and white pepper'
+    ],
+    steps: [
+      'Boil the potatoes until very soft, then mash roughly while still warm, leaving some lumps.',
+      'Season the warm potato with rice vinegar, salt and pepper so it absorbs.',
+      'Salt the sliced cucumber, rest 10 minutes, then squeeze out the water.',
+      'Fold through the mayo, cucumber, tomato and chopped egg once the potato has cooled.'
+    ],
+    notes: 'Dress the potato while warm and squeeze the cucumber - otherwise the salad goes watery.'
+  },
+  {
+    id: 'tonkatsu',
+    title: 'Tonkatsu',
+    description: '',
+    ingredients: [
+      '2 pork chops',
+      '100 g panko',
+      '50 g flour',
+      '2 eggs',
+      '2 tbsp potato starch',
+      'Salt and pepper',
+      'Oil, for frying'
+    ],
+    steps: [
+      'Season the chops and score the fat edge so they stay flat.',
+      'Dredge in flour and potato starch, then beaten egg, then panko, pressing it on.',
+      'Fry at 180C for 2 minutes.',
+      'Raise to 190C and fry a further 2 minutes, until deep golden.',
+      'Rest on a rack before slicing so the crust stays crisp.'
+    ],
+    notes: '180 for 2 minutes, then 190 for 2 minutes.'
+  },
+  {
+    id: 'cucumber-miso-salad',
+    title: 'Cucumber Miso Salad',
+    description: '',
+    ingredients: [
+      '2 cucumbers',
+      '2 tbsp miso',
+      '1 tbsp sugar',
+      '1 tbsp rice vinegar',
+      '1 tsp sesame oil',
+      'Toasted sesame seeds'
+    ],
+    steps: [
+      'Smash the cucumbers and tear into rough pieces so the dressing clings.',
+      'Whisk the miso, sugar, vinegar and sesame oil into a dressing.',
+      'Toss and finish with sesame seeds. Best eaten soon after dressing.'
+    ],
+    notes: ''
+  },
+  {
+    id: 'ayam-goreng',
+    title: 'Ayam Goreng',
+    description: 'Makes 6 pieces. Wet marinade blended, dry spices toasted, then combined.',
+    ingredients: [
+      '6 pieces chicken',
+      '1 knob ginger',
+      '6 cloves garlic',
+      '100 g shallots',
+      '3 lemongrass sticks',
+      '6 dried chilies',
+      '1 tbsp fennel seeds',
+      '1 tbsp coriander seeds',
+      'Curry leaves',
+      '20 g curry powder',
+      '1 tbsp turmeric',
+      '1 tbsp salt',
+      '250 g cornflour',
+      '1 tsp hot chili',
+      '1 egg'
+    ],
+    steps: [
+      'Blend the wet ingredients: ginger, garlic, shallots, lemongrass, dried chilies.',
+      'Toast the fennel and coriander seeds, then mix all the dry ingredients together.',
+      'Combine dry with wet and marinate the chicken.',
+      'Fry at 160C until cooked through and golden.'
+    ],
+    notes: 'Mix dry after toasting, then combine with the wet marinade.'
+  },
+  {
+    id: 'pad-kra-pao',
+    title: 'Pad Kra Pao',
+    description: 'For 500 g pork.',
+    ingredients: [
+      '500 g pork mince',
+      '6 cloves garlic',
+      '6 Thai chilies',
+      '1 tbsp light soy sauce',
+      '1/2 tbsp dark soy sauce',
+      '1 tbsp fish sauce',
+      '1 tbsp oyster sauce',
+      '1 1/2 tbsp palm sugar',
+      '150 g long beans',
+      '1 large handful Thai basil',
+      'Oil'
+    ],
+    steps: [
+      'Pound the garlic and Thai chilies into a rough paste and saute in oil.',
+      'Add the pork and cook until rendered, then add the sauce mix.',
+      'Add the long beans and stir-fry until just tender.',
+      'Kill the heat and fold through the Thai basil so it wilts rather than cooks.'
+    ],
+    notes: 'Be generous with the Thai chili and Thai basil - add more than you think.'
+  },
+  {
+    id: 'taco-beef',
+    title: 'Taco Beef',
+    description: 'For 400 g beef.',
+    ingredients: [
+      '400 g beef mince',
+      '1 1/2 tbsp chili powder',
+      '1/2 tsp ground cumin',
+      '1/2 tsp ground coriander',
+      '1/2 tsp ground garlic',
+      '1/2 tsp cayenne pepper',
+      '1/2 tsp dried oregano',
+      '1/2 onion',
+      '1/2 cup chicken stock',
+      'Salt and pepper'
+    ],
+    steps: [
+      'Brown the beef mince hard, breaking it up, and drain off excess fat.',
+      'Add the diced onion and cook until soft.',
+      'Stir in all the dry spices and cook out for a minute.',
+      'Pour in the chicken stock and simmer until it reduces and coats the meat.'
+    ],
+    notes: ''
+  },
+  {
+    id: 'refried-beans',
+    title: 'Refried Beans',
+    description: '',
+    ingredients: [
+      '2 cans pinto beans',
+      '4 rashers bacon',
+      '1 onion',
+      '1 tsp cumin',
+      '1 tsp chili powder',
+      '1/2 tsp cayenne',
+      '250 ml chicken broth',
+      'Salt, to taste'
+    ],
+    steps: [
+      'Render the chopped bacon until crisp.',
+      'Cook the diced onion in the bacon fat until soft, then add the spices.',
+      'Add the drained beans and broth, and simmer.',
+      'Mash to the texture you want, loosening with more broth as needed.'
+    ],
+    notes: ''
+  },
+  {
+    id: 'guacamole',
+    title: 'Guacamole',
+    description: '',
+    ingredients: [
+      '3 avocados',
+      '2 cloves garlic',
+      '1/2 red onion',
+      '1 lime, juiced',
+      '1 jalapeno',
+      '2 roma tomatoes',
+      '1/2 tsp toasted fresh ground cumin',
+      'Salt, to taste',
+      'Cilantro'
+    ],
+    steps: [
+      'Finely dice the red onion, jalapeno and tomatoes.',
+      'Mash the avocado, leaving it chunky.',
+      'Fold everything through with lime juice, cumin and salt. Taste and adjust the lime.'
+    ],
+    notes: ''
+  },
+  {
+    id: 'pickled-jalapenos',
+    title: 'Pickled Jalapenos',
+    description: '',
+    ingredients: [
+      '8 jalapenos',
+      '2 cups white vinegar',
+      '2 cups water',
+      '4 cloves garlic, smashed',
+      '3 tbsp salt',
+      '1/4 cup white sugar'
+    ],
+    steps: [
+      'Slice the jalapenos into rings and pack into a clean jar with the garlic.',
+      'Bring the vinegar, water, salt and sugar to a boil until dissolved.',
+      'Pour the hot brine over the jalapenos and let cool before refrigerating.'
+    ],
+    notes: 'Ready to eat the next day, better after a week.'
+  },
+  {
+    id: 'air-fryer-pork-belly',
+    title: 'Air Fryer Pork Belly',
+    description: '',
+    ingredients: [
+      '800 g pork belly, skin on',
+      '1 tbsp salt',
+      '1 tsp white pepper',
+      '1 tsp five spice',
+      '1 tsp sugar',
+      '1 tbsp Shaoxing wine'
+    ],
+    steps: [],
+    notes: 'Method not written down yet - temps and timings still to add.'
+  }
+];
+
+async function loadRecipes() {
+  try {
+    const result = await window.storage.get(STORAGE_KEY, false);
+    if (result && result.value) {
+      recipes = JSON.parse(result.value);
+    } else {
+      recipes = DEFAULT_RECIPES;
+      await persistRecipes();
+    }
+  } catch (e) {
+    recipes = DEFAULT_RECIPES;
+    try { await persistRecipes(); } catch (e2) { console.error('save failed', e2); }
+  }
+
+  try {
+    const sel = await window.storage.get(SELECTED_KEY, false);
+    if (sel && sel.value) {
+      selectedForShopping = new Set(JSON.parse(sel.value));
+    }
+  } catch (e) { /* no selection saved yet */ }
+
+  try {
+    const chk = await window.storage.get(SHOP_CHECKED_KEY, false);
+    if (chk && chk.value) {
+      const obj = JSON.parse(chk.value);
+      shoppingChecked = {};
+      Object.keys(obj).forEach(k => shoppingChecked[k] = new Set(obj[k]));
+    }
+  } catch (e) { /* no checked state saved yet */ }
+
+  render();
+  renderShopping();
+}
+
+// Save with retries — the storage backend occasionally returns a transient error
+async function safeSet(key, value) {
+  const delays = [0, 400, 1200];
+  for (let attempt = 0; attempt < delays.length; attempt++) {
+    if (delays[attempt]) await new Promise(r => setTimeout(r, delays[attempt]));
+    try {
+      await window.storage.set(key, value, false);
+      return true;
+    } catch (e) {
+      if (attempt === delays.length - 1) {
+        console.error('Storage save failed after retries', key, e);
+        return false;
+      }
+    }
+  }
+  return false;
+}
+
+function setSaveStatus(ok) {
+  const el = document.getElementById('saveStatus');
+  if (!el) return;
+  if (ok) {
+    el.style.display = 'none';
+  } else {
+    el.style.display = 'block';
+    el.textContent = "Couldn't save just now — your changes are here for this session but may not persist. Try again in a moment.";
+  }
+}
+
+async function persistSelected() {
+  const ok = await safeSet(SELECTED_KEY, JSON.stringify([...selectedForShopping]));
+  setSaveStatus(ok);
+  return ok;
+}
+
+async function persistShoppingChecked() {
+  const obj = {};
+  Object.keys(shoppingChecked).forEach(k => obj[k] = [...shoppingChecked[k]]);
+  const ok = await safeSet(SHOP_CHECKED_KEY, JSON.stringify(obj));
+  setSaveStatus(ok);
+  return ok;
+}
+
+function switchView(view) {
+  document.getElementById('nav-recipes').classList.toggle('active', view === 'recipes');
+  document.getElementById('nav-shopping').classList.toggle('active', view === 'shopping');
+  document.getElementById('view-recipes').classList.toggle('active', view === 'recipes');
+  document.getElementById('view-shopping').classList.toggle('active', view === 'shopping');
+  if (view === 'shopping') renderShopping();
+}
+
+let persistTimer = null;
+function schedulePersist() {
+  clearTimeout(persistTimer);
+  persistTimer = setTimeout(() => {
+    persistSelected();
+    persistShoppingChecked();
+  }, 600);
+}
+
+function toggleRecipeSelected(id) {
+  if (selectedForShopping.has(id)) selectedForShopping.delete(id);
+  else selectedForShopping.add(id);
+  renderShopping();
+  schedulePersist();
+}
+
+function toggleShoppingItem(recipeId, idx) {
+  if (!shoppingChecked[recipeId]) shoppingChecked[recipeId] = new Set();
+  const set = shoppingChecked[recipeId];
+  if (set.has(idx)) set.delete(idx); else set.add(idx);
+  renderShopping();
+  schedulePersist();
+}
+
+const CATEGORY_ORDER = ['Meat & Seafood', 'Produce', 'Dairy & Eggs', 'Pantry & Spices', 'Other'];
+
+// --- Ingredient parsing for merging (shopping list only) ---
+
+const UNIT_ALIASES = {
+  'g': 'g', 'gram': 'g', 'grams': 'g',
+  'kg': 'kg', 'kilo': 'kg', 'kilos': 'kg',
+  'ml': 'ml', 'l': 'l', 'litre': 'l', 'liter': 'l',
+  'tbsp': 'tbsp', 'tablespoon': 'tbsp', 'tablespoons': 'tbsp',
+  'tsp': 'tsp', 'teaspoon': 'tsp', 'teaspoons': 'tsp',
+  'cup': 'cup', 'cups': 'cup',
+  'clove': 'clove', 'cloves': 'clove',
+  'slice': 'slice', 'slices': 'slice',
+  'inch': 'inch', 'inches': 'inch',
+  'handful': 'handful', 'handfuls': 'handful',
+  'bunch': 'bunch', 'bunches': 'bunch',
+  'can': 'can', 'cans': 'can',
+  'stick': 'stick', 'sticks': 'stick',
+  'pinch': 'pinch'
+};
+
+function parseFraction(s) {
+  s = s.trim();
+  if (s.includes('/')) {
+    const [a, b] = s.split('/').map(Number);
+    if (b) return a / b;
+  }
+  if (s.includes('-') || s.includes('–')) {
+    // range like "2-4" -> take the upper bound so you buy enough
+    const parts = s.split(/[-–]/).map(Number).filter(n => !isNaN(n));
+    if (parts.length) return Math.max(...parts);
+  }
+  const n = parseFloat(s);
+  return isNaN(n) ? null : n;
+}
+
+function parseIngredient(text) {
+  let rest = text.trim();
+  // leading quantity: "1", "1/2", "2-4", "1 1/2"
+  const qtyMatch = rest.match(/^(\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:[.,]\d+)?(?:\s*[-–]\s*\d+(?:[.,]\d+)?)?)\s*/);
+  let qty = null;
+  if (qtyMatch) {
+    const raw = qtyMatch[1].replace(',', '.');
+    if (/^\d+\s+\d+\/\d+$/.test(raw)) {
+      const [whole, frac] = raw.split(/\s+/);
+      qty = Number(whole) + parseFraction(frac);
+    } else {
+      qty = parseFraction(raw);
+    }
+    rest = rest.slice(qtyMatch[0].length);
+  }
+
+  // unit right after the quantity
+  let unit = null;
+  const unitMatch = rest.match(/^([a-zA-Z]+)\.?\s+/);
+  if (unitMatch) {
+    const candidate = unitMatch[1].toLowerCase();
+    if (UNIT_ALIASES[candidate]) {
+      unit = UNIT_ALIASES[candidate];
+      rest = rest.slice(unitMatch[0].length);
+    }
+  }
+
+  return { qty, unit, name: rest.trim() };
+}
+
+// Reduce a name to a comparable key: drop parentheticals, purpose clauses, prep words
+function normalizeName(name) {
+  let n = name.toLowerCase();
+  n = n.replace(/\([^)]*\)/g, ' ');              // (for initial cook)
+  n = n.replace(/\b(for|to)\b[^,]*$/g, ' ');      // "for frying paste", "to taste"
+  n = n.replace(/,.*$/, ' ');                     // ", cut into cubes"
+  n = n.replace(/\b(fresh|large|small|medium|whole|about|approx|of|the|a|an)\b/g, ' ');
+  n = n.replace(/\b(cubed|chopped|sliced|minced|grated|ground|dried|toasted)\b/g, ' ');
+  n = n.replace(/[^a-z\s]/g, ' ');
+  n = n.replace(/\s+/g, ' ').trim();
+  // crude singularization
+  n = n.split(' ').map(w => (w.length > 3 && w.endsWith('s') && !w.endsWith('ss')) ? w.slice(0, -1) : w).join(' ');
+  return n;
+}
+
+function formatQty(n) {
+  if (n === null) return '';
+  const rounded = Math.round(n * 100) / 100;
+  if (Number.isInteger(rounded)) return String(rounded);
+  // render common fractions nicely
+  const map = { 0.25: '¼', 0.5: '½', 0.75: '¾', 0.33: '⅓', 0.67: '⅔' };
+  const whole = Math.floor(rounded);
+  const frac = Math.round((rounded - whole) * 100) / 100;
+  if (map[frac]) return whole > 0 ? `${whole}${map[frac]}` : map[frac];
+  return String(rounded);
+}
+
+// Combine quantities: sum when units match (with g/kg and ml/l conversion), else list them
+function combineQuantities(entries) {
+  const withQty = entries.filter(e => e.qty !== null);
+  if (withQty.length === 0) return '';
+
+  // normalize weight and volume to a base unit
+  const toBase = { g: ['g', 1], kg: ['g', 1000], ml: ['ml', 1], l: ['ml', 1000] };
+  const buckets = {};
+  let mixed = false;
+
+  withQty.forEach(e => {
+    const u = e.unit || '';
+    if (toBase[u]) {
+      const [base, factor] = toBase[u];
+      buckets[base] = (buckets[base] || 0) + e.qty * factor;
+    } else {
+      buckets[u] = (buckets[u] || 0) + e.qty;
+    }
+  });
+
+  const parts = Object.keys(buckets).map(u => {
+    let val = buckets[u];
+    let unit = u;
+    if (u === 'g' && val >= 1000) { val = val / 1000; unit = 'kg'; }
+    if (u === 'ml' && val >= 1000) { val = val / 1000; unit = 'l'; }
+    return unit ? `${formatQty(val)} ${unit}` : formatQty(val);
+  });
+
+  return parts.join(' + ');
+}
+
+function buildMergedItems(included) {
+  const groups = {};
+
+  included.forEach(r => {
+    const checkedSet = shoppingChecked[r.id] || new Set();
+    r.ingredients.forEach((text, idx) => {
+      const parsed = parseIngredient(text);
+      const key = normalizeName(parsed.name) || text.toLowerCase();
+      if (!groups[key]) {
+        groups[key] = {
+          key,
+          displayName: parsed.name || text,
+          entries: [],
+          sources: [],
+          refs: [],
+          category: categorize(text)
+        };
+      }
+      groups[key].entries.push(parsed);
+      groups[key].refs.push({ recipeId: r.id, idx });
+      if (!groups[key].sources.includes(r.title)) groups[key].sources.push(r.title);
+      // a merged row counts as checked only when every underlying item is checked
+      groups[key].allChecked = groups[key].refs.every(ref =>
+        (shoppingChecked[ref.recipeId] || new Set()).has(ref.idx)
+      );
+    });
+  });
+
+  return Object.values(groups).map(g => {
+    const qtyStr = combineQuantities(g.entries);
+    return {
+      key: g.key,
+      label: qtyStr ? `${qtyStr} ${g.displayName}` : g.displayName,
+      sources: g.sources,
+      refs: g.refs,
+      category: g.category,
+      merged: g.refs.length > 1,
+      checked: g.allChecked
+    };
+  });
+}
+
+function categorize(text) {
+  const t = text.toLowerCase();
+  const has = (...words) => words.some(w => t.includes(w));
+
+  if (has('beef', 'pork', 'chicken', 'fish', 'shrimp', 'prawn', 'lamb', 'bacon', 'sausage', 'chop', 'steak', 'mince', 'meat')) {
+    return 'Meat & Seafood';
+  }
+  if (has('milk', 'cheese', 'butter', 'cream', 'yogurt', 'egg')) {
+    return 'Dairy & Eggs';
+  }
+  if (has('ginger', 'garlic', 'turmeric', 'chili', 'chilies', 'chilli', 'shallot', 'lemongrass',
+          'scallion', 'onion', 'lime', 'lemon', 'tomato', 'lettuce', 'leaves', 'cabbage',
+          'cilantro', 'coriander leaves', 'basil', 'coconut,', 'fresh coconut')) {
+    return 'Produce';
+  }
+  if (has('sauce', 'sugar', 'salt', 'msg', 'starch', 'flour', 'oil', 'vinegar', 'paste',
+          'spice', 'seed', 'cinnamon', 'cumin', 'coriander seeds', 'fennel', 'wine', 'stock',
+          'broth', 'rice', 'noodle', 'coconut milk', 'pepper', 'water', 'maggi')) {
+    return 'Pantry & Spices';
+  }
+  return 'Other';
+}
+
+function renderShopping() {
+  const pickList = document.getElementById('pickList');
+  if (recipes.length === 0) {
+    pickList.innerHTML = `<div class="shop-empty">Add some recipes first, then pick which ones to shop for.</div>`;
+    document.getElementById('shoppingList').innerHTML = '';
+    return;
+  }
+
+  pickList.innerHTML = recipes.map(r => {
+    const checked = selectedForShopping.has(r.id);
+    return `<div class="pick-row">
+      <div class="checkbox ${checked ? 'checked' : ''}" onclick="toggleRecipeSelected('${r.id}')">${checked ? '✓' : ''}</div>
+      <div>
+        <div class="rtitle">${escapeHtml(r.title)}</div>
+        <div class="rcount">${r.ingredients.length} ingredients</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const included = recipes.filter(r => selectedForShopping.has(r.id));
+  const shopEl = document.getElementById('shoppingList');
+
+  if (included.length === 0) {
+    shopEl.innerHTML = `<div class="shop-empty">Tick recipes above to build your combined shopping list.</div>`;
+    return;
+  }
+
+  const items = buildMergedItems(included);
+
+  const unchecked = items.filter(i => !i.checked)
+    .sort((a, b) => a.label.localeCompare(b.label));
+  const checked = items.filter(i => i.checked)
+    .sort((a, b) => a.label.localeCompare(b.label));
+
+  let html = '';
+
+  CATEGORY_ORDER.forEach(cat => {
+    const group = unchecked.filter(i => i.category === cat);
+    if (group.length === 0) return;
+    html += `<div class="shop-group">
+      <div class="shop-group-title">${cat}</div>
+      ${group.map(i => renderShopRow(i)).join('')}
+    </div>`;
+  });
+
+  if (checked.length > 0) {
+    html += `<div class="shop-group">
+      <div class="shop-group-title" style="color: var(--ink-soft);">Checked off</div>
+      ${checked.map(i => renderShopRow(i)).join('')}
+    </div>`;
+  }
+
+  shopEl.innerHTML = html;
+}
+
+function renderShopRow(i) {
+  const refsAttr = encodeURIComponent(JSON.stringify(i.refs));
+  const sourceLine = i.merged
+    ? `${i.sources.join(' + ')} · combined`
+    : i.sources[0];
+  return `<div class="ing-row">
+    <div class="checkbox ${i.checked ? 'checked' : ''}" onclick="toggleMergedItem('${refsAttr}')">${i.checked ? '✓' : ''}</div>
+    <div>
+      <div class="ing-text ${i.checked ? 'checked' : ''}">${escapeHtml(i.label)}</div>
+      <div class="rcount" style="margin-top:1px;">${escapeHtml(sourceLine)}</div>
+    </div>
+  </div>`;
+}
+
+function toggleMergedItem(refsAttr) {
+  const refs = JSON.parse(decodeURIComponent(refsAttr));
+  const allChecked = refs.every(r => (shoppingChecked[r.recipeId] || new Set()).has(r.idx));
+  refs.forEach(r => {
+    if (!shoppingChecked[r.recipeId]) shoppingChecked[r.recipeId] = new Set();
+    if (allChecked) shoppingChecked[r.recipeId].delete(r.idx);
+    else shoppingChecked[r.recipeId].add(r.idx);
+  });
+  renderShopping();
+  schedulePersist();
+}
+
+async function persistRecipes() {
+  // strip transient UI state before saving
+  const clean = recipes.map(({ _open, ...rest }) => rest);
+  const ok = await safeSet(STORAGE_KEY, JSON.stringify(clean));
+  setSaveStatus(ok);
+  return ok;
+}
+
+function render() {
+  const list = document.getElementById('recipeList');
+  if (recipes.length === 0) {
+    list.innerHTML = `<div class="empty">
+      <div class="big">🍲</div>
+      <p>No recipes yet</p>
+      <span>Add one to start your collection</span>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = recipes.map(r => {
+    const isOpen = r._open;
+    const hasSteps = r.steps && r.steps.length > 0;
+    let tab = openTabs[r.id] || 'ingredients';
+    if (tab === 'steps' && !hasSteps) tab = 'ingredients';
+    const metaBits = [`${r.ingredients.length} ingredients`];
+    if (hasSteps) metaBits.push(`${r.steps.length} steps`);
+    return `
+    <div class="recipe-card ${isOpen ? 'open' : ''}" id="card-${r.id}">
+      <div class="recipe-head" onclick="toggleCard('${r.id}')">
+        <div class="recipe-head-text">
+          <div class="recipe-title">${escapeHtml(r.title)}</div>
+          <div class="recipe-meta">${metaBits.map(m => `<span>${m}</span>`).join('')}</div>
+        </div>
+        <div class="chevron">⌄</div>
+      </div>
+      <div class="recipe-body">
+        ${r.description ? `<p class="desc">${escapeHtml(r.description)}</p>` : ''}
+        <div class="tabs">
+          <button class="tab-btn ${tab === 'ingredients' ? 'active' : ''}" onclick="switchTab(event,'${r.id}','ingredients')">Ingredients</button>
+          ${hasSteps ? `<button class="tab-btn ${tab === 'steps' ? 'active' : ''}" onclick="switchTab(event,'${r.id}','steps')">Steps</button>` : ''}
+          ${r.notes ? `<button class="tab-btn ${tab === 'notes' ? 'active' : ''}" onclick="switchTab(event,'${r.id}','notes')">Notes</button>` : ''}
+        </div>
+        <div class="pane ${tab === 'ingredients' ? 'active' : ''}">
+          ${r.ingredients.map((ing, i) => {
+            const checked = (checkedIngredients[r.id] || new Set()).has(i);
+            return `<div class="ing-row">
+              <div class="checkbox ${checked ? 'checked' : ''}" onclick="event.stopPropagation(); toggleIngredient('${r.id}', ${i})">${checked ? '✓' : ''}</div>
+              <div class="ing-text ${checked ? 'checked' : ''}">${escapeHtml(ing)}</div>
+            </div>`;
+          }).join('')}
+        </div>
+        ${hasSteps ? `<div class="pane ${tab === 'steps' ? 'active' : ''}">
+          ${r.steps.map((s, i) => `<div class="step-row">
+            <div class="step-num">${i+1}</div>
+            <div class="step-text">${escapeHtml(s)}</div>
+          </div>`).join('')}
+        </div>` : ''}
+        ${r.notes ? `<div class="pane ${tab === 'notes' ? 'active' : ''}">
+          <div class="notes-box"><span class="lbl">Notes</span>${escapeHtml(r.notes)}</div>
+        </div>` : ''}
+        <div class="card-actions">
+          <button class="del-btn" onclick="event.stopPropagation(); deleteRecipe('${r.id}')">Remove recipe</button>
+        </div>
+      </div>
+    </div>
+    `;
+  }).join('');
+}
+
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function toggleCard(id) {
+  const r = recipes.find(x => x.id === id);
+  r._open = !r._open;
+  render();
+}
+
+function switchTab(e, id, tabName) {
+  e.stopPropagation();
+  openTabs[id] = tabName;
+  render();
+}
+
+function toggleIngredient(id, idx) {
+  if (!checkedIngredients[id]) checkedIngredients[id] = new Set();
+  const set = checkedIngredients[id];
+  if (set.has(idx)) set.delete(idx); else set.add(idx);
+  render();
+}
+
+async function deleteRecipe(id) {
+  recipes = recipes.filter(r => r.id !== id);
+  selectedForShopping.delete(id);
+  delete shoppingChecked[id];
+  await persistRecipes();
+  await persistSelected();
+  await persistShoppingChecked();
+  render();
+  renderShopping();
+}
+
+function openAddModal() {
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeAddModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  ['f-title','f-desc','f-ingredients','f-steps','f-notes'].forEach(id => document.getElementById(id).value = '');
+}
+
+async function saveNewRecipe() {
+  const title = document.getElementById('f-title').value.trim();
+  const desc = document.getElementById('f-desc').value.trim();
+  const ingredientsRaw = document.getElementById('f-ingredients').value.trim();
+  const stepsRaw = document.getElementById('f-steps').value.trim();
+  const notes = document.getElementById('f-notes').value.trim();
+
+  if (!title || !ingredientsRaw) {
+    alert('Please fill in a title and at least one ingredient.');
+    return;
+  }
+
+  const newRecipe = {
+    id: 'r-' + Date.now(),
+    title,
+    description: desc,
+    ingredients: ingredientsRaw.split('\n').map(s => s.trim()).filter(Boolean),
+    steps: stepsRaw.split('\n').map(s => s.trim()).filter(Boolean),
+    notes: notes || ''
+  };
+
+  recipes.unshift(newRecipe);
+  await persistRecipes();
+  closeAddModal();
+  render();
+  renderShopping();
+}
+
+loadRecipes();
+</script>
+
+</body>
+</html>
