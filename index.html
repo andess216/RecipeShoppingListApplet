@@ -589,6 +589,11 @@ window.storage = {
 const STORAGE_KEY = 'saved-recipes-v4';
 const SELECTED_KEY = 'shopping-selected-v1';
 const SHOP_CHECKED_KEY = 'shopping-checked-v1';
+// Ids of default recipes already offered to this device, so defaults added later
+// show up on existing installs without resurrecting ones the user deleted.
+const SEEDED_KEY = 'seeded-defaults-v1';
+// The first 20 entries of DEFAULT_RECIPES predate SEEDED_KEY; treat them as seeded.
+const LEGACY_DEFAULT_COUNT = 20;
 let recipes = [];
 let openTabs = {}; // recipeId -> 'ingredients'|'steps'|'notes'
 let checkedIngredients = {}; // recipeId -> Set of ingredient indices
@@ -1094,14 +1099,34 @@ const DEFAULT_RECIPES = [
   }
 ];
 
+async function seedNewDefaults() {
+  let seeded;
+  try {
+    const r = await window.storage.get(SEEDED_KEY, false);
+    seeded = r && r.value ? JSON.parse(r.value) : null;
+  } catch (e) { seeded = null; }
+  if (!Array.isArray(seeded)) {
+    seeded = DEFAULT_RECIPES.slice(0, LEGACY_DEFAULT_COUNT).map(r => r.id);
+  }
+  const have = new Set(recipes.map(r => r.id));
+  const added = DEFAULT_RECIPES.filter(r => !seeded.includes(r.id) && !have.has(r.id));
+  if (added.length) {
+    recipes = recipes.concat(added.map(r => JSON.parse(JSON.stringify(r))));
+    await persistRecipes();
+  }
+  await safeSet(SEEDED_KEY, JSON.stringify(DEFAULT_RECIPES.map(r => r.id)));
+}
+
 async function loadRecipes() {
   try {
     const result = await window.storage.get(STORAGE_KEY, false);
     if (result && result.value) {
       recipes = JSON.parse(result.value);
+      await seedNewDefaults();
     } else {
       recipes = DEFAULT_RECIPES;
       await persistRecipes();
+      await safeSet(SEEDED_KEY, JSON.stringify(DEFAULT_RECIPES.map(r => r.id)));
     }
   } catch (e) {
     recipes = DEFAULT_RECIPES;

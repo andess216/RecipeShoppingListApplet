@@ -10,6 +10,11 @@ browser, edit, refresh.
   users to pick up changed defaults — otherwise their saved copy wins and your
   edits to `DEFAULT_RECIPES` are invisible. This is the single most common
   "why isn't my change showing up" cause.
+- **New default recipes reach existing installs automatically.** Append them to
+  the end of `DEFAULT_RECIPES` with a unique `id`; `seedNewDefaults()` adds any
+  default not yet listed under `seeded-defaults-v1`, so deleted ones stay
+  deleted. The first `LEGACY_DEFAULT_COUNT` (20) defaults predate this and count
+  as already seeded — don't reorder or insert before them.
 - **Saves are debounced 600ms and fire-and-forget** so taps feel instant. Don't
   `await` them in the toggle handlers — that was the original lag bug.
 - **`safeSet()` retries failed writes three times with backoff**, then shows a
